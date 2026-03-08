@@ -5,8 +5,8 @@ from pydantic import BaseModel
 
 app = FastAPI(
     title="LSP Workforce & Dispatch API",
-    description="Headless task routing engine for Human and AGV warehouse operations.",
-    version="1.0.0"
+    description="Micro-tactical execution engine for routing human and AGV tasks.",
+    version="0.1.0"
 )
 
 class SystemStatus(BaseModel):
@@ -20,7 +20,7 @@ async def root() -> dict:
     return {
         "status": "Online",
         "timestamp": datetime.now(),
-        "version": "1.0.0"
+        "version": "0.1.0"
     }
 
 @app.get("/api/v1/workforce/roster", tags=["Workforce"])
