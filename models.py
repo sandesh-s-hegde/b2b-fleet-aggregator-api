@@ -1,18 +1,23 @@
-from sqlalchemy import Column, String, Float
+from sqlalchemy import Column, String, Float, Date, ForeignKey
 from database import Base
 
-class Worker(Base):
-    __tablename__ = "workers"
+class Vehicle(Base):
+    __tablename__ = "vehicles"
 
     id = Column(String, primary_key=True, index=True)
-    role = Column(String, index=True)
-    status = Column(String, default="Available")
-    fatigue_score = Column(Float, default=0.0)
+    supplier_name = Column(String, index=True)
+    vehicle_model = Column(String)
+    daily_rate_eur = Column(Float)
+    emissions_co2_kg = Column(Float)
+    availability_status = Column(String, default="Available", index=True)
 
-class AGV(Base):
-    __tablename__ = "agvs"
+class Booking(Base):
+    __tablename__ = "bookings"
 
-    id = Column(String, primary_key=True, index=True)
-    agv_type = Column(String)
-    status = Column(String, default="Charging")
-    battery_pct = Column(Float, default=100.0)
+    booking_reference = Column(String, primary_key=True, index=True)
+    vehicle_id = Column(String, ForeignKey("vehicles.id"))
+    partner_id = Column(String, index=True)
+    start_date = Column(Date)
+    end_date = Column(Date)
+    total_price = Column(Float)
+    status = Column(String, default="Confirmed")
