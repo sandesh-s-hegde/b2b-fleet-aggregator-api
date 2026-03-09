@@ -1,25 +1,21 @@
 from datetime import datetime
+from typing import List
 
-from fastapi import FastAPI, Response
-from pydantic import BaseModel
+from fastapi import FastAPI, Response, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 import models
-from database import engine
+import schemas
+from database import engine, get_db
 
 # Initialize database tables on startup
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="LSP Workforce & Dispatch API",
-    description="Micro-tactical execution engine for routing human and AGV tasks.",
-    version="0.1.0"
+    title="B2B Fleet Aggregator API",
+    description="CarTrawler-style API connecting logistics platforms to commercial rental suppliers.",
+    version="1.0.0"
 )
-
-
-class SystemStatus(BaseModel):
-    status: str
-    timestamp: datetime
-    version: str
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -28,46 +24,44 @@ async def favicon() -> Response:
     return Response(status_code=204)
 
 
-@app.get("/", response_model=SystemStatus, tags=["System"])
+@app.get("/", tags=["System"])
 async def root() -> dict:
     """Health check endpoint to verify the API is online."""
     return {
         "status": "Online",
         "timestamp": datetime.now(),
-        "version": "0.1.0"
+        "version": "1.0.0"
     }
 
 
-@app.get("/api/v1/workforce/roster", tags=["Workforce"])
-async def get_workforce_roster() -> dict:
-    """Fetches the current availability of human workers and AGVs."""
-    return {
-        "human_workers": [
-            {
-                "id": "W-101",
-                "role": "Forklift Operator",
-                "status": "Available",
-                "fatigue_score": 12.0
-            },
-            {
-                "id": "W-102",
-                "role": "Picker",
-                "status": "On Break",
-                "fatigue_score": 65.0
-            }
-        ],
-        "agv_fleet": [
-            {
-                "id": "AGV-01",
-                "type": "Pallet Jack",
-                "status": "Charging",
-                "battery_pct": 18.0
-            },
-            {
-                "id": "AGV-02",
-                "type": "Autonomous Forklift",
-                "status": "Available",
-                "battery_pct": 94.0
-            }
-        ]
-    }
+@app.post("/api/v1/vehicles", response_model=schemas.VehicleResponse, tags=["Fleet Management"])
+async def add_vehicle(vehicle: schemas.VehicleCreate, db: Session = Depends(get_db)):
+    """Registers a new commercial vehicle into the supplier database."""
+    db_vehicle = models.Vehicle(**vehicle.model_dump())
+    db.add(db_vehicle)
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+
+@app.get("/api/v1/vehicles", response_model=List[schemas.VehicleResponse], tags=["Fleet Management"])
+async def get_all_vehicles(db: Session = Depends(get_db)):
+    """Fetches the entire catalog of available supplier vehicles."""
+    return db.query(models.Vehicle).all()
+
+
+@app.post("/api/v1/fleet/search", response_model=List[schemas.VehicleResponse], tags=["Aggregation Engine"])
+async def search_fleet_capacity(request: schemas.SearchRequest, db: Session = Depends(get_db)):
+    """
+    Core Aggregator Endpoint:
+    Simulates searching the supplier network for available vehicles based on location and dates.
+    """
+    # For now, we query all vehicles marked as "Available" in the database.
+    available_vehicles = db.query(models.Vehicle).filter(
+        models.Vehicle.availability_status == "Available"
+    ).all()
+
+    if not available_vehicles:
+        raise HTTPException(status_code=404, detail="No available vehicles found for this route.")
+
+    return available_vehicles
