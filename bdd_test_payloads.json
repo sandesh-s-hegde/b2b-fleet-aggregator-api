@@ -1,0 +1,20 @@
+{
+  "scenario_1_search": {
+    "endpoint": "POST /api/v1/fleet/search",
+    "payload": {
+      "location_code": "DUB",
+      "pickup_date": "2026-03-15",
+      "dropoff_date": "2026-03-17",
+      "vehicle_type": "EV Van"
+    }
+  },
+  "scenario_3_booking": {
+    "endpoint": "POST /api/v1/bookings",
+    "payload": {
+      "vehicle_id": "V-E-001",
+      "partner_id": "TWIN-MACRO-01",
+      "start_date": "2026-03-15",
+      "end_date": "2026-03-17"
+    }
+  }
+}
