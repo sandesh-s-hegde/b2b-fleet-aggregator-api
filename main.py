@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import List
 
@@ -65,3 +66,51 @@ async def search_fleet_capacity(request: schemas.SearchRequest, db: Session = De
         raise HTTPException(status_code=404, detail="No available vehicles found for this route.")
 
     return available_vehicles
+
+
+@app.post("/api/v1/bookings", response_model=schemas.BookingResponse, tags=["Booking Engine"])
+async def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db)):
+    """Executes a secure B2B fleet booking and generates a confirmation reference."""
+    # 1. Verify Vehicle Availability
+    vehicle = db.query(models.Vehicle).filter(models.Vehicle.id == booking.vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found in supplier catalog.")
+    if vehicle.availability_status != "Available":
+        raise HTTPException(status_code=400, detail="Vehicle is no longer available for booking.")
+
+    # 2. Calculate Total Price dynamically (Days * Daily Rate)
+    delta = booking.end_date - booking.start_date
+    days = delta.days if delta.days > 0 else 1
+    total_price = days * vehicle.daily_rate_eur
+
+    # 3. Generate CarTrawler-style Reference
+    booking_ref = f"CONF-{uuid.uuid4().hex[:6].upper()}"
+
+    # 4. Create and Save Booking
+    new_booking = models.Booking(
+        booking_reference=booking_ref,
+        vehicle_id=booking.vehicle_id,
+        partner_id=booking.partner_id,
+        start_date=booking.start_date,
+        end_date=booking.end_date,
+        total_price=total_price,
+        status="Confirmed"
+    )
+
+    # 5. Mark the vehicle as off-the-market
+    vehicle.availability_status = "Booked"
+
+    db.add(new_booking)
+    db.commit()
+    db.refresh(new_booking)
+
+    return new_booking
+
+
+@app.get("/api/v1/bookings/{partner_id}", response_model=List[schemas.BookingResponse], tags=["Booking Engine"])
+async def get_partner_bookings(partner_id: str, db: Session = Depends(get_db)):
+    """Retrieves all active fleet reservations for a specific B2B partner."""
+    bookings = db.query(models.Booking).filter(models.Booking.partner_id == partner_id).all()
+    if not bookings:
+        raise HTTPException(status_code=404, detail="No active bookings found for this partner.")
+    return bookings
