@@ -52,15 +52,23 @@ async def get_all_vehicles(db: Session = Depends(get_db)):
 
 @app.post("/api/v1/fleet/search", response_model=List[schemas.VehicleResponse], tags=["Aggregation Engine"])
 async def search_fleet_capacity(request: schemas.SearchRequest, db: Session = Depends(get_db)):
-    """Simulates searching the supplier network for available vehicles based on route criteria."""
-    available_vehicles = db.query(models.Vehicle).filter(
-        models.Vehicle.availability_status == "Available"
-    ).all()
+    """Aggregates fleet data and prioritizes low-emission vehicles for the partner."""
+    query = db.query(models.Vehicle).filter(models.Vehicle.availability_status == "Available")
 
-    if not available_vehicles:
+    if request.vehicle_type:
+        query = query.filter(models.Vehicle.vehicle_model.contains(request.vehicle_type))
+
+    vehicles = query.all()
+
+    if not vehicles:
         raise HTTPException(status_code=404, detail="No available vehicles found for this route.")
 
-    return available_vehicles
+    sorted_vehicles = sorted(
+        vehicles,
+        key=lambda v: (v.emissions_co2_kg, v.daily_rate_eur)
+    )
+
+    return sorted_vehicles
 
 
 @app.post("/api/v1/bookings", response_model=schemas.BookingResponse, tags=["Booking Engine"])
