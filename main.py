@@ -4,6 +4,7 @@ from typing import List
 
 from fastapi import FastAPI, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 import models
 import schemas
@@ -24,11 +25,20 @@ async def favicon() -> Response:
     return Response(status_code=204)
 
 
-@app.get("/", tags=["System"])
-async def root() -> dict:
-    """Health check endpoint to verify the API is online."""
+@app.get("/api/v1/health", tags=["System"])
+async def health_check(db: Session = Depends(get_db)) -> dict:
+    """Deep health check that verifies API uptime and Database connectivity."""
+    try:
+        # Ping the database to ensure the connection pool is alive
+        db.execute(text("SELECT 1"))
+        db_status = "Connected"
+    except Exception:
+        db_status = "Disconnected"
+        raise HTTPException(status_code=503, detail="Database connection failed")
+
     return {
-        "status": "Online",
+        "api_status": "Online",
+        "database_status": db_status,
         "timestamp": datetime.now(),
         "version": "1.0.0"
     }
