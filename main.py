@@ -5,6 +5,7 @@ from typing import List
 from fastapi import FastAPI, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from fastapi.middleware.cors import CORSMiddleware
 
 import models
 import schemas
@@ -18,6 +19,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Security: CORS Configuration for Digital Twin Frontend Integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, restrict this to specific frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> Response:
