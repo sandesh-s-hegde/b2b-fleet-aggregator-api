@@ -2,13 +2,12 @@ import time
 import uuid
 from datetime import datetime
 from typing import List
-from sqlalchemy import func
 
 from fastapi import FastAPI, Response, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
-from sqlalchemy.orm import Session
 from fastapi.security import APIKeyHeader
+from sqlalchemy import text, func
+from sqlalchemy.orm import Session
 
 import models
 import schemas
@@ -18,7 +17,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="B2B Fleet Aggregator API",
-    description="CarTrawler-style API connecting logistics platforms to commercial rental suppliers.",
+    description="Enterprise B2B API connecting logistics platforms to commercial rental suppliers.",
     version="1.0.0"
 )
 
@@ -30,13 +29,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Security: B2B API Key Authentication
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
+
 async def verify_api_key(api_key: str = Depends(api_key_header)):
     """Validates partner API keys before allowing transactions."""
-    if api_key != "CARTRAWLER-PROD-KEY-99":  # In real life, this checks the database
+    if api_key != "PARTNER-PROD-KEY-99":
         raise HTTPException(status_code=403, detail="Invalid or missing B2B API Key")
 
 
@@ -82,6 +81,7 @@ async def add_vehicle(vehicle: schemas.VehicleCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(db_vehicle)
     return db_vehicle
+
 
 @app.post("/api/v1/vehicles/batch", response_model=dict, tags=["Fleet Management"])
 async def add_vehicles_batch(vehicles: List[schemas.VehicleCreate], db: Session = Depends(get_db)):
@@ -129,8 +129,6 @@ async def create_booking(booking: schemas.BookingCreate, db: Session = Depends(g
     if vehicle.availability_status != "Available":
         raise HTTPException(status_code=400, detail="Vehicle is no longer available for booking.")
 
-    delta = booking.end_date - booking.start_date
-    days = max(delta.days, 1)# Dynamic Pricing Engine: Calculate utilization to trigger surge pricing
     total_fleet = db.query(models.Vehicle).count()
     available_fleet = db.query(models.Vehicle).filter(models.Vehicle.availability_status == "Available").count()
 
@@ -138,14 +136,23 @@ async def create_booking(booking: schemas.BookingCreate, db: Session = Depends(g
     if total_fleet > 0:
         utilization = (total_fleet - available_fleet) / total_fleet
 
-    # If fleet is more than 80% booked, apply a 20% surge multiplier
     surge_multiplier = 1.2 if utilization > 0.8 else 1.0
 
     delta = booking.end_date - booking.start_date
     days = max(delta.days, 1)
 
-    # Calculate final price
     total_price = days * vehicle.daily_rate_eur * surge_multiplier
+    booking_ref = f"CONF-{uuid.uuid4().hex[:6].upper()}"
+
+    new_booking = models.Booking(
+        booking_reference=booking_ref,
+        vehicle_id=booking.vehicle_id,
+        partner_id=booking.partner_id,
+        start_date=booking.start_date,
+        end_date=booking.end_date,
+        total_price=total_price,
+        status="Confirmed"
+    )
 
     vehicle.availability_status = "Booked"
 
@@ -208,6 +215,20 @@ async def get_fleet_utilization(db: Session = Depends(get_db)):
     }
 
 
+@app.get("/api/v1/fleet/revenue", tags=["System Analytics"])
+async def get_financial_metrics(db: Session = Depends(get_db)):
+    """Aggregates total revenue generated from confirmed B2B bookings."""
+    total_revenue = db.query(func.sum(models.Booking.total_price)).filter(
+        models.Booking.status == "Confirmed"
+    ).scalar() or 0.0
+
+    return {
+        "currency": "EUR",
+        "total_revenue_generated": round(total_revenue, 2),
+        "timestamp": datetime.now()
+    }
+
+
 @app.delete("/api/v1/vehicles/{vehicle_id}", tags=["Fleet Management"])
 async def retire_vehicle(vehicle_id: str, db: Session = Depends(get_db)):
     """Safely retires a vehicle from the active catalog if it has no active bookings."""
@@ -228,16 +249,3 @@ async def retire_vehicle(vehicle_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     return {"detail": f"Vehicle {vehicle_id} successfully retired from the fleet."}
-
-@app.get("/api/v1/fleet/revenue", tags=["System Analytics"])
-async def get_financial_metrics(db: Session = Depends(get_db)):
-    """Aggregates total revenue generated from confirmed B2B bookings."""
-    total_revenue = db.query(func.sum(models.Booking.total_price)).filter(
-        models.Booking.status == "Confirmed"
-    ).scalar() or 0.0
-
-    return {
-        "currency": "EUR",
-        "total_revenue_generated": round(total_revenue, 2),
-        "timestamp": datetime.now()
-    }
