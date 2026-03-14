@@ -129,20 +129,22 @@ async def create_booking(booking: schemas.BookingCreate, db: Session = Depends(g
         raise HTTPException(status_code=400, detail="Vehicle is no longer available for booking.")
 
     delta = booking.end_date - booking.start_date
+    days = max(delta.days, 1)# Dynamic Pricing Engine: Calculate utilization to trigger surge pricing
+    total_fleet = db.query(models.Vehicle).count()
+    available_fleet = db.query(models.Vehicle).filter(models.Vehicle.availability_status == "Available").count()
+
+    utilization = 0.0
+    if total_fleet > 0:
+        utilization = (total_fleet - available_fleet) / total_fleet
+
+    # If fleet is more than 80% booked, apply a 20% surge multiplier
+    surge_multiplier = 1.2 if utilization > 0.8 else 1.0
+
+    delta = booking.end_date - booking.start_date
     days = max(delta.days, 1)
-    total_price = days * vehicle.daily_rate_eur
 
-    booking_ref = f"CONF-{uuid.uuid4().hex[:6].upper()}"
-
-    new_booking = models.Booking(
-        booking_reference=booking_ref,
-        vehicle_id=booking.vehicle_id,
-        partner_id=booking.partner_id,
-        start_date=booking.start_date,
-        end_date=booking.end_date,
-        total_price=total_price,
-        status="Confirmed"
-    )
+    # Calculate final price
+    total_price = days * vehicle.daily_rate_eur * surge_multiplier
 
     vehicle.availability_status = "Booked"
 
