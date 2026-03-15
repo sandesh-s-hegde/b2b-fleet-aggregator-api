@@ -1,15 +1,15 @@
+import os
 import time
 import uuid
 from datetime import datetime
 from typing import List
 
 from fastapi import FastAPI, Response, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
-from fastapi import FastAPI, Response, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
 
 import models
 import schemas
@@ -23,7 +23,7 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "Sandesh Hegde",
-        "url": "https://github.com/sandesh-s-hegde",
+        "email": "your.email@example.com",
     },
     license_info={
         "name": "MIT",
@@ -61,8 +61,14 @@ async def add_process_time_header(request: Request, call_next):
 
 @app.get("/", include_in_schema=False)
 async def root_redirect():
-    """Developer Experience: Redirects root traffic directly to the Swagger UI."""
+    """Redirects root traffic directly to the Swagger UI."""
     return RedirectResponse(url="/docs")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    """Silences the browser's default favicon request error."""
+    return Response(status_code=204)
 
 
 @app.get("/api/v1/health", tags=["System"])
