@@ -18,7 +18,14 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="B2B Fleet Aggregator API",
     description="Enterprise B2B API connecting logistics platforms to commercial rental suppliers.",
-    version="1.0.0"
+    version="1.0.0",
+    contact={
+        "name": "Sandesh Hegde",
+        "url": "https://github.com/sandesh-s-hegde",
+    },
+    license_info={
+        "name": "MIT",
+    }
 )
 
 app.add_middleware(
