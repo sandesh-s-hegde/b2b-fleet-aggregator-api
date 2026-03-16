@@ -1,18 +1,17 @@
+import logging
 import os
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List
 
 from fastapi import FastAPI, Response, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
-import logging
-from contextlib import asynccontextmanager
-from fastapi.responses import JSONResponse
 
 import models
 import schemas
@@ -25,6 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger("fleet-aggregator")
 
 models.Base.metadata.create_all(bind=engine)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,6 +58,7 @@ app.add_middleware(
 
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
