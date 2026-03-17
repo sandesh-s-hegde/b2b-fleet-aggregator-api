@@ -20,7 +20,7 @@ In the travel and logistics tech sectors, the "Integration Gap" is a multi-milli
 2. **Static Data:** Availability is often outdated, leading to failed bookings and lost revenue.
 3. **Environment Impact:** Legacy systems fail to prioritize low-emission or EV options during the search phase.
 
-**This API solves the "Macro-Micro Gap."** By providing a standardized, stateful microservice that tracks supplier inventory, calculates dynamic rates, sorts by carbon telemetry, and manages the complete booking lifecycle, we transform theoretical capacity needs into real-world, executable bookings.
+**This API solves the "Macro-Micro Gap."** By providing a standardized, stateful microservice that tracks supplier inventory, calculates dynamic surge pricing, sorts by carbon telemetry, and manages the complete booking lifecycle, we transform theoretical capacity needs into real-world, executable bookings.
 
 ## 🔮 Planned Outcomes: Where is this going?
 
@@ -42,21 +42,24 @@ The project follows a "Clean Architecture" pattern to ensure high scalability an
 * `schemas.py`: Pydantic v2 data contracts for strict request/response validation.
 * `docker-compose.yml`: Infrastructure-as-Code (IaC) for rapid local database orchestration.
 * `postman_collection.json`: Automated Behavior-Driven Development (BDD) test suite.
+* `start.bat` / `stop.bat`: Windows automation scripts for one-click environment orchestration.
 
 ### 📍 Core Endpoints
 
 **System & Analytics**
 * `GET /api/v1/health` - Deep system health check (API + Database Ping).
 * `GET /api/v1/fleet/utilization` - Real-time fleet utilization metrics.
+* `GET /api/v1/fleet/revenue` - Aggregates financial telemetry from confirmed B2B bookings.
 
 **Fleet Management & Aggregation**
 * `GET /api/v1/vehicles` - Live Supplier Catalog retrieval.
 * `POST /api/v1/vehicles` - Register new supplier inventory.
+* `POST /api/v1/vehicles/batch` - Ingest bulk payloads for high-volume supplier syncs.
 * `DELETE /api/v1/vehicles/{vehicle_id}` - Safely retire inventory (validates active bookings).
 * `POST /api/v1/fleet/search` - Multi-criteria search engine (Filters availability, sorts by lowest CO2 emissions and daily rate).
 
-**Stateful Booking Engine**
-* `POST /api/v1/bookings` - Execute secure B2B booking and reserve capacity.
+**Stateful Booking Engine** *(Secured via API Key)*
+* `POST /api/v1/bookings` - Execute secure B2B booking with dynamic surge pricing.
 * `GET /api/v1/bookings/{partner_id}` - Retrieve active partner itineraries.
 * `PATCH /api/v1/bookings/{booking_reference}/cancel` - Cancel booking and dynamically release inventory back to the market.
 
@@ -73,41 +76,43 @@ python -m venv venv
 
 # Activate (Windows):
 .\venv\Scripts\activate
-
 ```
 
 ### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
-
 ```
 
-### 3. Start the Infrastructure (Docker)
-
-Ensure Docker Desktop is running, then spin up the PostgreSQL database:
+### 3. Environment Variables
+Copy the provided template to configure your local secure credentials:
 
 ```bash
-docker compose up -d
-
+cp .env.example .env
 ```
 
-### 4. Boot the Server
+### 4. Automated Boot Sequence (Windows)
+The project includes Developer Experience (DX) scripts to automatically orchestrate the Docker database and FastAPI server.
 
+To boot the entire environment:
 ```bash
-uvicorn main:app --reload
-
+.\start.bat
 ```
+*Access the interactive Swagger UI at: `http://localhost:8000/docs`*
 
-*Access the interactive Swagger UI at: `http://localhost:8000/docs*`
+To safely spin down the infrastructure when finished:
+```bash
+.\stop.bat
+```
 
 ---
 
 ## 🗺️ Development Roadmap
 
-* [x] **Phase 1: Aggregator Core & API Architecture.** Bootstrapping the FastAPI headless framework with automated OpenAPI 3.1 documentation and system health checks.
-* [x] **Phase 2: Relational Data Persistence.** Designing the PostgreSQL schema using SQLAlchemy ORM to manage complex "Vehicle-to-Supplier" relationships.
-* [x] **Phase 3: Stateful Booking Engine.** Implemented full lifecycle management (Search -> Book -> Cancel) with dynamic inventory locking and releasing.
-* [x] **Phase 4: Multi-Criteria Search Algorithm.** Built the core aggregation logic to sort results based on partner-specific KPIs (Greenest Fleet prioritized, followed by Lowest Price).
-* [x] **Phase 5: Automated QA & DevOps.** Integrated Docker Compose for DB orchestration and built a stateful, automated Postman BDD test suite.
-* [ ] **Phase 6: Digital Twin Synchronization.** Developing the closed-loop bridge to automatically trigger fleet searches based on "Capacity Shortfall"
+* [x] **Phase 1: API Core.** Bootstrapped FastAPI framework with OpenAPI 3.1 docs and health telemetry.
+* [x] **Phase 2: Data Persistence.** Designed PostgreSQL schema and SQLAlchemy ORM for complex supplier relationships.
+* [x] **Phase 3: Booking Engine.** Implemented stateful lifecycle management (Search -> Book -> Cancel) with inventory locking.
+* [x] **Phase 4: Search Algorithm.** Engineered multi-criteria aggregation sorting by emission KPIs and pricing.
+* [x] **Phase 5: Advanced Logic.** Shipped API Key auth, dynamic surge pricing, and financial revenue endpoints.
+* [x] **Phase 6: DX & QA.** Integrated Docker orchestration, local `.bat` automation, and a stateful Postman BDD test suite.
+* [ ] **Phase 7: Digital Twin Integration.** Building the closed-loop bridge to trigger automatic fleet searches based on predictive capacity shortfalls.
