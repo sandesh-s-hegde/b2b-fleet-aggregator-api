@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
     logger.info("B2B Fleet Aggregator API is shutting down gracefully...")
 
 
+
 app = FastAPI(
     title="🤖 B2B Fleet Aggregator API",
     description="High-performance middleware bridging macro-strategic forecasting with micro-tactical fleet execution. Features dynamic surge pricing, emission tracking, and multi-supplier aggregation.",
@@ -59,6 +60,15 @@ app.add_middleware(
 API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Injects real-time performance telemetry into response headers."""
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    # Add the processing time in seconds to the headers
+    response.headers["X-Process-Time"] = f"{process_time:.4f} sec"
+    return response
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
