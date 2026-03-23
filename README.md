@@ -111,10 +111,12 @@ To safely spin down the infrastructure when finished:
 
 ## 🗺️ Development Roadmap
 
+## 🗺️ Development Roadmap
+
 * [x] **Phase 1: API Core.** Bootstrapped FastAPI framework with OpenAPI 3.1 docs and health telemetry.
 * [x] **Phase 2: Data Persistence.** Designed PostgreSQL schema and SQLAlchemy ORM for complex supplier relationships.
 * [x] **Phase 3: Booking Engine.** Implemented stateful lifecycle management (Search -> Book -> Cancel) with inventory locking.
 * [x] **Phase 4: Search Algorithm.** Engineered multi-criteria aggregation sorting by emission KPIs and pricing.
 * [x] **Phase 5: Advanced Logic.** Shipped API Key auth, dynamic surge pricing, and financial revenue endpoints.
-* [x] **Phase 6: DX & QA.** Integrated Docker orchestration, local `.bat` automation, and a stateful Postman BDD test suite.
-* [ ] **Phase 7: Digital Twin Integration.** Building the closed-loop bridge to trigger automatic fleet searches based on predictive capacity shortfalls.
+* [x] **Phase 6: DevOps & Governance.** Established Docker orchestration, CI/CD pipelines, Postman BDD test suites, and strict repository governance (Security & Contributor policies).
+* [ ] **Phase 7: Ecosystem Integration (EGA Loop).** Upgrading the API to act as the automated execution layer for the **Digital Capacity Optimizer**. Will ingest stochastic capacity shortfalls to trigger zero-touch fleet procurement based on visual volatility.
