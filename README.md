@@ -111,8 +111,6 @@ To safely spin down the infrastructure when finished:
 
 ## 🗺️ Development Roadmap
 
-## 🗺️ Development Roadmap
-
 * [x] **Phase 1: API Core.** Bootstrapped FastAPI framework with OpenAPI 3.1 docs and health telemetry.
 * [x] **Phase 2: Data Persistence.** Designed PostgreSQL schema and SQLAlchemy ORM for complex supplier relationships.
 * [x] **Phase 3: Booking Engine.** Implemented stateful lifecycle management (Search -> Book -> Cancel) with inventory locking.
