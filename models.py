@@ -31,9 +31,9 @@ class Booking(Base):
 
 
 class BookingRequest(BaseModel):
-    partner_id: str = Field(..., description="The canonical ID of the B2B partner (e.g., 'EASYJET')")
-    supplier_id: str = Field(..., description="The ID of the local rental supplier")
-    pickup_location: str = Field(..., min_length=3, max_length=3, description="Standard 3-letter IATA airport code (e.g., 'CDG')")
-    pickup_time: datetime = Field(..., description="ISO 8601 formatted datetime for pickup")
-    customer_age: int = Field(..., ge=18, le=99, description="Customer age must be 18 or older")
-    flight_number: Optional[str] = Field(None, description="Optional flight number for delayed arrival tracking")
+    partner_id: str = Field(..., description="Canonical ID of the requesting B2B partner.")
+    supplier_id: str = Field(..., description="ID of the fulfillment supplier.")
+    pickup_location: str = Field(..., min_length=3, max_length=3, description="3-letter IATA location code.")
+    pickup_time: datetime = Field(..., description="Scheduled pickup timestamp.")
+    customer_age: int = Field(..., ge=18, le=99, description="Age of the primary driver.")
+    flight_number: Optional[str] = Field(None, description="Inbound flight identifier for delay tracking.")
