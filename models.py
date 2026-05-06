@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, Date, Float, ForeignKey, String
+from sqlalchemy.orm import relationship
 
 from database import Base
 
@@ -17,6 +18,8 @@ class Vehicle(Base):
     emissions_co2_kg = Column(Float)
     availability_status = Column(String, default="Available", index=True)
 
+    bookings = relationship("Booking", back_populates="vehicle")
+
 
 class Booking(Base):
     __tablename__ = "bookings"
@@ -29,6 +32,8 @@ class Booking(Base):
     total_price = Column(Float)
     status = Column(String, default="Confirmed")
 
+    vehicle = relationship("Vehicle", back_populates="bookings")
+
 
 class BookingRequest(BaseModel):
     partner_id: str = Field(..., description="Canonical ID of the requesting B2B partner.")
@@ -36,4 +41,4 @@ class BookingRequest(BaseModel):
     pickup_location: str = Field(..., min_length=3, max_length=3, description="3-letter IATA location code.")
     pickup_time: datetime = Field(..., description="Scheduled pickup timestamp.")
     customer_age: int = Field(..., ge=18, le=99, description="Age of the primary driver.")
-    flight_number: Optional[str] = Field(None, description="Inbound flight identifier for delay tracking.")
+    flight_number: Optional[str] = Field(default=None, description="Inbound flight identifier for delay tracking.")
